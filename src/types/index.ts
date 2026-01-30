@@ -54,6 +54,8 @@ export interface UserProfile {
     isVerified: boolean;
     isProfileComplete: boolean;
     createdAt: Date;
+    subscriptionStatus: string;
+    subscriptionEndDate?: Date | null;
 }
 
 // Request Body Types

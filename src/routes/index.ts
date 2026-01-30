@@ -3,6 +3,7 @@ import authRoutes from './auth.routes';
 import analyticsRoutes from './analytics.routes';
 import examRoutes from './exam.routes';
 import settingsRoutes from './settings.routes';
+import subscriptionRoutes from './subscription.routes';
 
 const router = Router();
 
@@ -50,6 +51,9 @@ router.use('/exams', examRoutes);
 
 // Settings routes
 router.use('/settings', settingsRoutes);
+
+// Subscription routes
+router.use('/subscription', subscriptionRoutes);
 
 // Add more routes here as the application grows
 // router.use('/users', userRoutes);

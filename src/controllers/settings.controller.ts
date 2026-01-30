@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../types';
 import * as settingsService from '../services/settings.service';
-import { sendSuccess } from '../utils/response.utils';
+import { sendSuccess, sendError } from '../utils/response.utils';
 import {
     ChangePasswordInput,
     UpdatePreferencesInput,
@@ -74,8 +74,20 @@ export const changePassword = async (
         const userId = req.user!._id.toString();
         const data = req.body as ChangePasswordInput;
         await settingsService.changePassword(userId, data);
-        sendSuccess(res, 'Password changed successfully');
+        sendSuccess(res, 'Password changed successfully. Please login with your new password.');
     } catch (error) {
+        if (error instanceof Error) {
+            if (error.message === 'Incorrect current password') {
+                sendError(res, 'The current password you entered is incorrect', 400);
+                return;
+            }
+            if (error.message.includes('last 3 passwords')) {
+                sendError(res, error.message, 400);
+                return;
+            }
+            sendError(res, error.message, 400);
+            return;
+        }
         next(error);
     }
 };

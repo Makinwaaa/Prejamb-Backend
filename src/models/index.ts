@@ -6,3 +6,5 @@ export { ExamResult, IExamResult, ExamMode, ISubjectResult } from './examResult.
 export { UserPreferences, IUserPreferences, ThemeType, FontSizeLevel } from './userPreferences.model';
 export { SupportTicket, ISupportTicket, IssueType, TicketStatus } from './supportTicket.model';
 export { DeletedEmail, IDeletedEmail } from './deletedEmail.model';
+export { Subscription, ISubscription, PlanType } from './subscription.model';
+export { Payment, IPayment, PaymentStatus, PaymentMethod } from './payment.model';

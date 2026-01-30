@@ -42,6 +42,8 @@ const options: swaggerJsdoc.Options = {
                         isVerified: { type: 'boolean', example: true },
                         isProfileComplete: { type: 'boolean', example: true },
                         createdAt: { type: 'string', format: 'date-time' },
+                        subscriptionStatus: { type: 'string', enum: ['ACTIVE', 'INACTIVE'], example: 'ACTIVE' },
+                        subscriptionEndDate: { type: 'string', format: 'date-time', nullable: true },
                     },
                 },
                 // API Response
@@ -93,6 +95,7 @@ const options: swaggerJsdoc.Options = {
                     required: ['email'],
                     properties: {
                         email: { type: 'string', format: 'email', example: 'user@example.com' },
+                        type: { type: 'string', enum: ['EMAIL_VERIFICATION', 'PASSWORD_RESET'], default: 'EMAIL_VERIFICATION' },
                     },
                 },
                 // Complete Profile Request
@@ -203,6 +206,14 @@ const options: swaggerJsdoc.Options = {
             {
                 name: 'Exams',
                 description: 'Exam history and details endpoints',
+            },
+            {
+                name: 'Subscription',
+                description: 'Subscription management and payment endpoints',
+            },
+            {
+                name: 'Settings',
+                description: 'User settings and preferences endpoints',
             },
         ],
     },

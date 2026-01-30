@@ -54,6 +54,10 @@ export const resendOtpSchema = z.object({
         .string()
         .min(1, 'Email is required')
         .regex(emailRegex, 'Invalid email format'),
+    type: z
+        .enum(['EMAIL_VERIFICATION', 'PASSWORD_RESET'])
+        .optional()
+        .default('EMAIL_VERIFICATION'),
 });
 
 /**

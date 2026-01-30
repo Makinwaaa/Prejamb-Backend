@@ -219,6 +219,8 @@ router.post(
  *         description: Profile not complete (returns tempToken for profile completion)
  *       401:
  *         description: Invalid email or password
+ *       404:
+ *         description: Account does not exist
  *       429:
  *         description: Too many login attempts
  */
@@ -328,6 +330,40 @@ router.post(
     passwordResetLimiter,
     validate(forgotPasswordSchema),
     authController.forgotPassword
+);
+
+/**
+ * @swagger
+ * /auth/verify-reset-otp:
+ *   post:
+ *     summary: Verify password reset OTP
+ *     description: Verify the OTP sent for password reset before allowing the user to set a new password.
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/VerifyOtpRequest'
+ *     responses:
+ *       200:
+ *         description: OTP verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         description: Invalid or expired OTP
+ *       404:
+ *         description: User not found
+ *       429:
+ *         description: Too many requests
+ */
+router.post(
+    '/verify-reset-otp',
+    passwordResetLimiter,
+    validate(verifyOtpSchema),
+    authController.verifyResetOtp
 );
 
 /**

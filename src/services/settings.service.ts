@@ -1,4 +1,4 @@
-import { User, UserPreferences, Otp, SupportTicket, DeletedEmail, RefreshToken, IUser } from '../models';
+import { User, UserPreferences, Otp, SupportTicket, DeletedEmail, RefreshToken, IUser, Subscription } from '../models';
 import { createOtp, verifyOtp } from './otp.service';
 import { sendAccountActionOtpEmail, sendSupportTicketConfirmationEmail } from './email.service';
 import { hashPassword, comparePassword } from '../utils/password.utils';
@@ -20,15 +20,37 @@ export const getUserProfile = async (userId: string) => {
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
 
-    // Format createdAt date
+    // Get active subscription status from Subscription model
+    const activeSubscription = await Subscription.findOne({
+        userId,
+        isActive: true,
+        endDate: { $gt: new Date() },
+    }).sort({ createdAt: -1 });
+
+    // Determine subscription status
+    let subscriptionStatus: 'ACTIVE' | 'INACTIVE' = 'INACTIVE';
+    let subscriptionPlan: string | null = null;
+    let subscriptionEndDate: Date | null = null;
+
+    if (activeSubscription) {
+        subscriptionStatus = 'ACTIVE';
+        subscriptionPlan = activeSubscription.planType;
+        subscriptionEndDate = activeSubscription.endDate;
+    }
+
+    // Format createdAt date for display
+    const accountCreation = user.createdAt;
+
     return {
         firstName: user.firstName,
         lastName: user.lastName,
         middleName: user.middleName,
         email: user.email,
         phoneNumber: user.phoneNumber,
-        subscriptionStatus: user.subscriptionStatus,
-        createdAt: user.createdAt,
+        subscription: subscriptionStatus,
+        subscriptionPlan,
+        subscriptionEndDate,
+        accountCreation,
         isVerified: user.isVerified,
         isProfileComplete: user.isProfileComplete,
     };

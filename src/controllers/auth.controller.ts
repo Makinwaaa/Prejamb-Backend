@@ -26,8 +26,8 @@ export const register = async (
         );
     } catch (error) {
         if (error instanceof Error) {
-            if (error.message.includes('already exists')) {
-                sendConflict(res, error.message);
+            if (error.message.includes('already exists') || (error as any).code === 11000) {
+                sendConflict(res, 'An account with this email already exists');
                 return;
             }
         }
@@ -79,7 +79,7 @@ export const resendOtp = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        await authService.resendOtp(req.body.email, 'EMAIL_VERIFICATION');
+        await authService.resendOtp(req.body.email, req.body.type || 'EMAIL_VERIFICATION');
         sendSuccess(res, 'OTP sent successfully. Please check your email.');
     } catch (error) {
         if (error instanceof Error) {
@@ -156,6 +156,10 @@ export const login = async (
                 );
                 return;
             }
+            if (error.message === 'Account does not exist') {
+                sendError(res, 'Account does not exist', 404);
+                return;
+            }
             sendError(res, error.message, 401);
             return;
         }
@@ -221,15 +225,47 @@ export const forgotPassword = async (
             'If an account exists with this email, you will receive a password reset OTP.'
         );
     } catch (error) {
-        if (error instanceof Error && error.message.includes('wait')) {
-            sendError(res, error.message, 429);
+        if (error instanceof Error) {
+            if (error.message.includes('wait')) {
+                sendError(res, error.message, 429);
+                return;
+            }
+            if (error.message === 'User not found') {
+                sendError(res, 'Account does not exist', 404);
+                return;
+            }
+        }
+        next(error);
+    }
+};
+
+/**
+ * Verify reset password OTP
+ * POST /api/v1/auth/verify-reset-otp
+ */
+export const verifyResetOtp = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        await authService.verifyResetOtp(req.body);
+        sendSuccess(res, 'OTP verified successfully.');
+    } catch (error) {
+        if (error instanceof Error) {
+            const err = error as Error & { attemptsRemaining?: number };
+            if (err.attemptsRemaining !== undefined) {
+                sendError(
+                    res,
+                    `${error.message} ${err.attemptsRemaining} attempts remaining.`,
+                    400
+                );
+                return;
+            }
+            sendError(res, error.message, 400);
             return;
         }
-        // Don't reveal if user exists
-        sendSuccess(
-            res,
-            'If an account exists with this email, you will receive a password reset OTP.'
-        );
+        next(error);
     }
 };
 

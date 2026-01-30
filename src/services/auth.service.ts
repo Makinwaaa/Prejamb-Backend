@@ -9,6 +9,7 @@ import {
 } from '../utils/jwt.utils';
 import { createOtp, verifyOtp, canRequestNewOtp } from './otp.service';
 import { sendOtpEmail, sendWelcomeEmail } from './email.service';
+import { createFreeSubscription } from './subscription.service';
 import {
     RegisterInput,
     VerifyOtpInput,
@@ -31,6 +32,8 @@ const toUserProfile = (user: IUser): UserProfile => ({
     isVerified: user.isVerified,
     isProfileComplete: user.isProfileComplete,
     createdAt: user.createdAt,
+    subscriptionStatus: user.subscriptionStatus,
+    subscriptionEndDate: user.subscriptionEndDate,
 });
 
 /**
@@ -186,6 +189,9 @@ export const completeProfile = async (
     // Send welcome email
     await sendWelcomeEmail(user.email, firstName);
 
+    // Create free subscription for new user
+    await createFreeSubscription(user._id.toString());
+
     return {
         tokens: { accessToken, refreshToken },
         user: toUserProfile(user),
@@ -204,7 +210,7 @@ export const loginUser = async (
     const user = await User.findOne({ email: email.toLowerCase() });
 
     if (!user) {
-        throw new Error('Invalid email or password');
+        throw new Error('Account does not exist');
     }
 
     // Verify password
@@ -335,8 +341,7 @@ export const forgotPassword = async (email: string): Promise<void> => {
     const user = await User.findOne({ email: email.toLowerCase() });
 
     if (!user) {
-        // Don't reveal if user exists
-        return;
+        throw new Error('User not found');
     }
 
     // Check rate limit
@@ -350,6 +355,33 @@ export const forgotPassword = async (email: string): Promise<void> => {
     // Generate and send OTP
     const otp = await createOtp(user._id.toString(), 'PASSWORD_RESET');
     await sendOtpEmail(email, otp, 'password_reset');
+};
+
+/**
+ * Verify password reset OTP
+ */
+export const verifyResetOtp = async (
+    data: VerifyOtpInput
+): Promise<void> => {
+    const { email, otp } = data;
+
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    // Verify OTP
+    const result = await verifyOtp(user._id.toString(), otp, 'PASSWORD_RESET');
+
+    if (!result.isValid) {
+        const error = new Error(result.message) as Error & {
+            attemptsRemaining?: number;
+        };
+        error.attemptsRemaining = result.attemptsRemaining;
+        throw error;
+    }
 };
 
 /**
