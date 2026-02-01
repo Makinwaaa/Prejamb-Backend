@@ -408,65 +408,17 @@
     {
       "name": "Settings",
       "description": "User settings and preferences endpoints"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Dashboard data, analytics, and exam modes"
+    },
+    {
+      "name": "Notifications",
+      "description": "User notification management"
     }
   ],
   "paths": {
-    "/analytics/dashboard": {
-      "get": {
-        "summary": "Get dashboard analytics",
-        "description": "Returns quick analytics for the user's exam history (Total Written, Passed, Failed, Average).",
-        "tags": [
-          "Analytics"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Analytics retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "totalExamsWritten": {
-                          "type": "number"
-                        },
-                        "examsPassed": {
-                          "type": "number"
-                        },
-                        "examsFailed": {
-                          "type": "number"
-                        },
-                        "performanceAverage": {
-                          "type": "number",
-                          "description": "Percentage 0-100"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      }
-    },
     "/auth/register": {
       "post": {
         "summary": "Register a new user",
@@ -977,6 +929,62 @@
         }
       }
     },
+    "/analytics/dashboard": {
+      "get": {
+        "summary": "Get dashboard analytics",
+        "description": "Returns quick analytics for the user's exam history (Total Written, Passed, Failed, Average).",
+        "tags": [
+          "Analytics"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalExamsWritten": {
+                          "type": "number"
+                        },
+                        "examsPassed": {
+                          "type": "number"
+                        },
+                        "examsFailed": {
+                          "type": "number"
+                        },
+                        "performanceAverage": {
+                          "type": "number",
+                          "description": "Percentage 0-100"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
     "/exams/history": {
       "get": {
         "summary": "Get exam history",
@@ -1173,41 +1181,6 @@
         }
       }
     },
-    "/health": {
-      "get": {
-        "summary": "API Health Check",
-        "description": "Check if the API is running and healthy.",
-        "tags": [
-          "Health"
-        ],
-        "responses": {
-          "200": {
-            "description": "API is running",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Prejamb API is running"
-                    },
-                    "timestamp": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/settings/profile": {
       "get": {
         "summary": "Get user profile information",
@@ -1279,6 +1252,25 @@
                           "type": "string",
                           "format": "date-time",
                           "description": "Date and time account was created"
+                        },
+                        "avatar": {
+                          "type": "string",
+                          "enum": [
+                            "avatar1",
+                            "avatar2",
+                            "avatar3",
+                            "avatar4",
+                            "avatar5",
+                            "avatar6",
+                            "avatar7",
+                            "avatar8",
+                            "default"
+                          ]
+                        },
+                        "lastLoginAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
                         }
                       }
                     }
@@ -1296,7 +1288,7 @@
     "/settings/preferences": {
       "get": {
         "summary": "Get user preferences",
-        "description": "Get user display preferences including theme and font size.",
+        "description": "Get user display preferences including theme, font size, and avatar.",
         "tags": [
           "Settings"
         ],
@@ -1331,6 +1323,21 @@
                             "auto"
                           ],
                           "description": "Theme preference (light, dark, or auto for system default)"
+                        },
+                        "avatar": {
+                          "type": "string",
+                          "enum": [
+                            "avatar1",
+                            "avatar2",
+                            "avatar3",
+                            "avatar4",
+                            "avatar5",
+                            "avatar6",
+                            "avatar7",
+                            "avatar8",
+                            "default"
+                          ],
+                          "description": "User's selected avatar"
                         }
                       }
                     }
@@ -1343,7 +1350,7 @@
       },
       "put": {
         "summary": "Update user preferences",
-        "description": "Update theme and font size. Theme can be light, dark, or auto (follows system theme).",
+        "description": "Update theme, font size, and avatar. Theme can be light, dark, or auto (follows system theme). Avatar selection persists across login sessions.",
         "tags": [
           "Settings"
         ],
@@ -1373,6 +1380,21 @@
                       "auto"
                     ],
                     "description": "Theme preference. light=light mode, dark=dark mode, auto=follow system theme"
+                  },
+                  "avatar": {
+                    "type": "string",
+                    "enum": [
+                      "avatar1",
+                      "avatar2",
+                      "avatar3",
+                      "avatar4",
+                      "avatar5",
+                      "avatar6",
+                      "avatar7",
+                      "avatar8",
+                      "default"
+                    ],
+                    "description": "User avatar selection. Persists and is returned on every login."
                   }
                 }
               }
@@ -1839,10 +1861,65 @@
         }
       }
     },
+    "/subscription/upgrade-options": {
+      "get": {
+        "summary": "Get available upgrade options",
+        "description": "Get available upgrade options based on current subscription.\nUsers cannot downgrade to a lower plan while on an active paid subscription.\n",
+        "tags": [
+          "Subscription"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upgrade options retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "currentPlan": {
+                          "type": "string"
+                        },
+                        "canDowngrade": {
+                          "type": "boolean",
+                          "example": false
+                        },
+                        "upgradeOptions": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
     "/subscription/initialize-payment": {
       "post": {
         "summary": "Initialize payment for subscription upgrade",
-        "description": "Initialize a payment transaction for upgrading to a paid subscription plan.",
+        "description": "Initialize a payment transaction for upgrading to a paid subscription plan.\n\n**Important**: Users cannot downgrade to a lower plan while on an active paid subscription.\nThey can only upgrade to a higher tier plan. When the subscription expires, they will fall back\nto the free plan (without trial access) and can then choose any plan.\n\nPlan hierarchy: FREE < STARTER < STANDARD < ANNUAL\n",
         "tags": [
           "Subscription"
         ],
@@ -1921,7 +1998,7 @@
             }
           },
           "400": {
-            "description": "Invalid request"
+            "description": "Invalid request or attempting to downgrade"
           },
           "401": {
             "description": "Unauthorized"
@@ -2104,6 +2181,703 @@
           },
           "401": {
             "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/dashboard": {
+      "get": {
+        "summary": "Get full dashboard data",
+        "description": "Get complete dashboard data including welcome info, subscription status, analytics, recent exams, and exam modes.",
+        "tags": [
+          "Dashboard"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "welcome": {
+                          "type": "object",
+                          "properties": {
+                            "firstName": {
+                              "type": "string"
+                            },
+                            "lastName": {
+                              "type": "string"
+                            },
+                            "lastLoginAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            },
+                            "avatar": {
+                              "type": "string",
+                              "enum": [
+                                "avatar1",
+                                "avatar2",
+                                "avatar3",
+                                "avatar4",
+                                "avatar5",
+                                "avatar6",
+                                "avatar7",
+                                "avatar8",
+                                "default"
+                              ]
+                            }
+                          }
+                        },
+                        "subscription": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "ACTIVE",
+                                "INACTIVE"
+                              ]
+                            },
+                            "planType": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "planName": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "daysRemaining": {
+                              "type": "integer",
+                              "nullable": true
+                            },
+                            "endDate": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            }
+                          }
+                        },
+                        "analytics": {
+                          "type": "object",
+                          "properties": {
+                            "totalExams": {
+                              "type": "integer"
+                            },
+                            "averageScore": {
+                              "type": "number"
+                            },
+                            "highestScore": {
+                              "type": "number"
+                            },
+                            "improvementRate": {
+                              "type": "number"
+                            },
+                            "lastExamDate": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true
+                            },
+                            "subjectPerformance": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "subject": {
+                                    "type": "string"
+                                  },
+                                  "averageScore": {
+                                    "type": "number"
+                                  },
+                                  "examsTaken": {
+                                    "type": "integer"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "recentExams": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "mode": {
+                                "type": "string"
+                              },
+                              "score": {
+                                "type": "integer"
+                              },
+                              "totalObtainable": {
+                                "type": "integer"
+                              },
+                              "percentage": {
+                                "type": "integer"
+                              },
+                              "isPassed": {
+                                "type": "boolean"
+                              },
+                              "date": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        },
+                        "examModes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "description": {
+                                "type": "string"
+                              },
+                              "icon": {
+                                "type": "string"
+                              },
+                              "available": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/dashboard/analytics": {
+      "get": {
+        "summary": "Get quick analytics",
+        "description": "Get quick analytics for the dashboard showing performance metrics.",
+        "tags": [
+          "Dashboard"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Analytics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalExams": {
+                          "type": "integer"
+                        },
+                        "averageScore": {
+                          "type": "number"
+                        },
+                        "highestScore": {
+                          "type": "number"
+                        },
+                        "improvementRate": {
+                          "type": "number"
+                        },
+                        "lastExamDate": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        },
+                        "subjectPerformance": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/dashboard/recent-exams": {
+      "get": {
+        "summary": "Get recent exam results",
+        "description": "Get the most recent exam results (default 3).",
+        "tags": [
+          "Dashboard"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 3
+            },
+            "description": "Number of recent exams to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent exams retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "exams": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/dashboard/jamb-news": {
+      "get": {
+        "summary": "Get JAMB news",
+        "description": "Get latest news and updates from JAMB official sources.",
+        "tags": [
+          "Dashboard"
+        ],
+        "responses": {
+          "200": {
+            "description": "JAMB news retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "news": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "summary": {
+                                "type": "string"
+                              },
+                              "date": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "source": {
+                                "type": "string"
+                              },
+                              "url": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "summary": "Get all notifications",
+        "description": "Get paginated list of all notifications for the authenticated user.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number for pagination"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Number of notifications per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notifications retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "notifications": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "_id": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "DAILY_REMINDER",
+                                  "EXAM_COMPLETED",
+                                  "JAMB_UPDATE",
+                                  "STUDY_TIP",
+                                  "NEW_QUESTIONS",
+                                  "SUBSCRIPTION_REMINDER",
+                                  "SYLLABUS_UPDATE",
+                                  "WEEKLY_SUMMARY",
+                                  "SYSTEM",
+                                  "GENERAL"
+                                ]
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              },
+                              "isRead": {
+                                "type": "boolean"
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "pages": {
+                          "type": "integer"
+                        },
+                        "unreadCount": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/notifications/unread": {
+      "get": {
+        "summary": "Get unread notifications",
+        "description": "Get all unread notifications for the authenticated user.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 50
+            },
+            "description": "Maximum number of unread notifications to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unread notifications retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "notifications": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "count": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/notifications/unread-count": {
+      "get": {
+        "summary": "Get unread notification count",
+        "description": "Get the count of unread notifications for the authenticated user.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unread count retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "unreadCount": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/notifications/{notificationId}/read": {
+      "patch": {
+        "summary": "Mark notification as read",
+        "description": "Mark a specific notification as read.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notificationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of the notification to mark as read"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification marked as read"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Notification not found"
+          }
+        }
+      }
+    },
+    "/notifications/read-all": {
+      "patch": {
+        "summary": "Mark all notifications as read",
+        "description": "Mark all unread notifications as read for the authenticated user.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All notifications marked as read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "markedCount": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/notifications/{notificationId}": {
+      "delete": {
+        "summary": "Delete a notification",
+        "description": "Delete a specific notification.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notificationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of the notification to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Notification not found"
           }
         }
       }

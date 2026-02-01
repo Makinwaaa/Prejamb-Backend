@@ -4,6 +4,8 @@ import analyticsRoutes from './analytics.routes';
 import examRoutes from './exam.routes';
 import settingsRoutes from './settings.routes';
 import subscriptionRoutes from './subscription.routes';
+import dashboardRoutes from './dashboard.routes';
+import notificationRoutes from './notification.routes';
 
 const router = Router();
 
@@ -55,8 +57,11 @@ router.use('/settings', settingsRoutes);
 // Subscription routes
 router.use('/subscription', subscriptionRoutes);
 
-// Add more routes here as the application grows
-// router.use('/users', userRoutes);
-// router.use('/questions', questionRoutes);
+// Dashboard routes
+router.use('/dashboard', dashboardRoutes);
+
+// Notification routes
+router.use('/notifications', notificationRoutes);
 
 export default router;
+

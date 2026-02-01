@@ -56,6 +56,8 @@ export interface UserProfile {
     createdAt: Date;
     subscriptionStatus: string;
     subscriptionEndDate?: Date | null;
+    lastLoginAt?: Date | null;
+    avatar: string;
 }
 
 // Request Body Types

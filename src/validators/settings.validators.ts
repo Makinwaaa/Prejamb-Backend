@@ -32,6 +32,7 @@ export const changePasswordSchema = z.object({
  * Update preferences validation schema
  * Font size: 1-5 (12px, 14px, 16px, 18px, 20px)
  * Theme: light, dark, auto (system default)
+ * Avatar: avatar1-8 or default
  */
 export const updatePreferencesSchema = z.object({
     fontSize: z
@@ -45,7 +46,12 @@ export const updatePreferencesSchema = z.object({
             errorMap: () => ({ message: 'Theme must be light, dark, or auto' }),
         })
         .optional(),
-}).refine((data) => data.fontSize !== undefined || data.theme !== undefined, {
+    avatar: z
+        .enum(['avatar1', 'avatar2', 'avatar3', 'avatar4', 'avatar5', 'avatar6', 'avatar7', 'avatar8', 'default'], {
+            errorMap: () => ({ message: 'Invalid avatar selection' }),
+        })
+        .optional(),
+}).refine((data) => data.fontSize !== undefined || data.theme !== undefined || data.avatar !== undefined, {
     message: 'At least one preference must be provided',
 });
 

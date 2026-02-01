@@ -72,6 +72,13 @@ router.use(authenticate);
  *                       type: string
  *                       format: date-time
  *                       description: Date and time account was created
+ *                     avatar:
+ *                       type: string
+ *                       enum: [avatar1, avatar2, avatar3, avatar4, avatar5, avatar6, avatar7, avatar8, default]
+ *                     lastLoginAt:
+ *                       type: string
+ *                       format: date-time
+ *                       nullable: true
  *       401:
  *         description: Unauthorized
  */
@@ -82,7 +89,7 @@ router.get('/profile', settingsController.getProfile);
  * /settings/preferences:
  *   get:
  *     summary: Get user preferences
- *     description: Get user display preferences including theme and font size.
+ *     description: Get user display preferences including theme, font size, and avatar.
  *     tags: [Settings]
  *     security:
  *       - bearerAuth: []
@@ -106,9 +113,13 @@ router.get('/profile', settingsController.getProfile);
  *                       type: string
  *                       enum: [light, dark, auto]
  *                       description: Theme preference (light, dark, or auto for system default)
+ *                     avatar:
+ *                       type: string
+ *                       enum: [avatar1, avatar2, avatar3, avatar4, avatar5, avatar6, avatar7, avatar8, default]
+ *                       description: User's selected avatar
  *   put:
  *     summary: Update user preferences
- *     description: Update theme and font size. Theme can be light, dark, or auto (follows system theme).
+ *     description: Update theme, font size, and avatar. Theme can be light, dark, or auto (follows system theme). Avatar selection persists across login sessions.
  *     tags: [Settings]
  *     security:
  *       - bearerAuth: []
@@ -128,6 +139,10 @@ router.get('/profile', settingsController.getProfile);
  *                 type: string
  *                 enum: [light, dark, auto]
  *                 description: Theme preference. light=light mode, dark=dark mode, auto=follow system theme
+ *               avatar:
+ *                 type: string
+ *                 enum: [avatar1, avatar2, avatar3, avatar4, avatar5, avatar6, avatar7, avatar8, default]
+ *                 description: User avatar selection. Persists and is returned on every login.
  *     responses:
  *       200:
  *         description: User preferences updated successfully
@@ -140,6 +155,7 @@ router.put(
     validate(updatePreferencesSchema),
     settingsController.updatePreferences
 );
+
 
 /**
  * @swagger

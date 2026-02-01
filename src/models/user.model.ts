@@ -3,6 +3,9 @@ import mongoose, { Document, Schema, Model } from 'mongoose';
 // Subscription status type
 export type SubscriptionStatus = 'ACTIVE' | 'INACTIVE';
 
+// Avatar type options
+export type AvatarType = 'avatar1' | 'avatar2' | 'avatar3' | 'avatar4' | 'avatar5' | 'avatar6' | 'avatar7' | 'avatar8' | 'default';
+
 // User interface for TypeScript
 export interface IUser extends Document {
     _id: mongoose.Types.ObjectId;
@@ -25,6 +28,10 @@ export interface IUser extends Document {
     hasUsedFreeTrial: boolean;
     // Password security - stores hashes of last 3 passwords
     passwordHistory: string[];
+    // Login tracking
+    lastLoginAt?: Date;
+    // Avatar selection
+    avatar: AvatarType;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -104,6 +111,17 @@ const userSchema = new Schema<IUser>(
         passwordHistory: {
             type: [String],
             default: [],
+        },
+        // Login tracking
+        lastLoginAt: {
+            type: Date,
+            default: null,
+        },
+        // Avatar selection
+        avatar: {
+            type: String,
+            enum: ['avatar1', 'avatar2', 'avatar3', 'avatar4', 'avatar5', 'avatar6', 'avatar7', 'avatar8', 'default'],
+            default: 'default',
         },
     },
     {

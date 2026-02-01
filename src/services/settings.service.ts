@@ -53,6 +53,8 @@ export const getUserProfile = async (userId: string) => {
         accountCreation,
         isVerified: user.isVerified,
         isProfileComplete: user.isProfileComplete,
+        avatar: user.avatar || 'default',
+        lastLoginAt: user.lastLoginAt || null,
     };
 };
 
@@ -60,6 +62,9 @@ export const getUserProfile = async (userId: string) => {
  * Get user preferences
  */
 export const getUserPreferences = async (userId: string) => {
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
     let preferences = await UserPreferences.findOne({ userId });
 
     // Create default preferences if not exists
@@ -74,23 +79,63 @@ export const getUserPreferences = async (userId: string) => {
     return {
         fontSize: preferences.fontSize,
         theme: preferences.theme,
+        avatar: user.avatar || 'default',
     };
 };
 
 /**
  * Update user preferences
  */
-export const updateUserPreferences = async (userId: string, data: UpdatePreferencesInput) => {
-    // Upsert preferences
+export const updateUserPreferences = async (userId: string, data: UpdatePreferencesInput & { avatar?: string }) => {
+    const user = await User.findById(userId);
+    if (!user) throw new Error('User not found');
+
+    // Handle avatar separately (stored in User model)
+    if (data.avatar) {
+        await User.findByIdAndUpdate(userId, { avatar: data.avatar });
+    }
+
+    // Update preferences (theme, fontSize in UserPreferences model)
+    const preferencesData: any = {};
+    if (data.theme) preferencesData.theme = data.theme;
+    if (data.fontSize) preferencesData.fontSize = data.fontSize;
+
     const preferences = await UserPreferences.findOneAndUpdate(
         { userId },
-        { $set: data },
+        { $set: preferencesData },
         { new: true, upsert: true, setDefaultsOnInsert: true }
     );
+
+    // Get updated user for avatar
+    const updatedUser = await User.findById(userId);
 
     return {
         fontSize: preferences.fontSize,
         theme: preferences.theme,
+        avatar: updatedUser?.avatar || 'default',
+    };
+};
+
+/**
+ * Update user avatar
+ */
+export const updateAvatar = async (userId: string, avatar: string) => {
+    const validAvatars = ['avatar1', 'avatar2', 'avatar3', 'avatar4', 'avatar5', 'avatar6', 'avatar7', 'avatar8', 'default'];
+
+    if (!validAvatars.includes(avatar)) {
+        throw new Error('Invalid avatar selection');
+    }
+
+    const user = await User.findByIdAndUpdate(
+        userId,
+        { avatar },
+        { new: true }
+    );
+
+    if (!user) throw new Error('User not found');
+
+    return {
+        avatar: user.avatar,
     };
 };
 

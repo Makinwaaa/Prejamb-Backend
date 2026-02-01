@@ -215,9 +215,25 @@ const options: swaggerJsdoc.Options = {
                 name: 'Settings',
                 description: 'User settings and preferences endpoints',
             },
+            {
+                name: 'Dashboard',
+                description: 'Dashboard data, analytics, and exam modes',
+            },
+            {
+                name: 'Notifications',
+                description: 'User notification management',
+            },
         ],
     },
-    apis: ['./src/routes/*.ts'], // Path to route files with JSDoc comments
+    apis: [
+        './src/routes/auth.routes.ts',
+        './src/routes/analytics.routes.ts',
+        './src/routes/exam.routes.ts',
+        './src/routes/settings.routes.ts',
+        './src/routes/subscription.routes.ts',
+        './src/routes/dashboard.routes.ts',
+        './src/routes/notification.routes.ts',
+    ], // Path to route files with JSDoc comments
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

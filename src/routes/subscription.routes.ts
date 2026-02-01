@@ -113,10 +113,57 @@ router.get('/current', authenticate, subscriptionController.getCurrentSubscripti
 
 /**
  * @swagger
+ * /subscription/upgrade-options:
+ *   get:
+ *     summary: Get available upgrade options
+ *     description: |
+ *       Get available upgrade options based on current subscription.
+ *       Users cannot downgrade to a lower plan while on an active paid subscription.
+ *     tags: [Subscription]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Upgrade options retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     currentPlan:
+ *                       type: string
+ *                     canDowngrade:
+ *                       type: boolean
+ *                       example: false
+ *                     upgradeOptions:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     message:
+ *                       type: string
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/upgrade-options', authenticate, subscriptionController.getUpgradeOptions);
+
+/**
+ * @swagger
  * /subscription/initialize-payment:
  *   post:
  *     summary: Initialize payment for subscription upgrade
- *     description: Initialize a payment transaction for upgrading to a paid subscription plan.
+ *     description: |
+ *       Initialize a payment transaction for upgrading to a paid subscription plan.
+ *       
+ *       **Important**: Users cannot downgrade to a lower plan while on an active paid subscription.
+ *       They can only upgrade to a higher tier plan. When the subscription expires, they will fall back
+ *       to the free plan (without trial access) and can then choose any plan.
+ *       
+ *       Plan hierarchy: FREE < STARTER < STANDARD < ANNUAL
  *     tags: [Subscription]
  *     security:
  *       - bearerAuth: []
@@ -162,7 +209,7 @@ router.get('/current', authenticate, subscriptionController.getCurrentSubscripti
  *                     plan:
  *                       type: object
  *       400:
- *         description: Invalid request
+ *         description: Invalid request or attempting to downgrade
  *       401:
  *         description: Unauthorized
  */

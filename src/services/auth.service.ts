@@ -34,6 +34,8 @@ const toUserProfile = (user: IUser): UserProfile => ({
     createdAt: user.createdAt,
     subscriptionStatus: user.subscriptionStatus,
     subscriptionEndDate: user.subscriptionEndDate,
+    lastLoginAt: user.lastLoginAt || null,
+    avatar: user.avatar || 'default',
 });
 
 /**
@@ -254,9 +256,16 @@ export const loginUser = async (
         expiresAt: refreshTokenExpiry,
     });
 
+    // Update last login time
+    const updatedUser = await User.findByIdAndUpdate(
+        user._id,
+        { lastLoginAt: new Date() },
+        { new: true }
+    );
+
     return {
         tokens: { accessToken, refreshToken },
-        user: toUserProfile(user),
+        user: toUserProfile(updatedUser || user),
     };
 };
 

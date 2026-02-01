@@ -43,6 +43,42 @@ export const getCurrentSubscription = async (
 };
 
 /**
+ * Get available upgrade options for current subscription
+ * GET /api/v1/subscription/upgrade-options
+ */
+export const getUpgradeOptions = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        if (!req.user) {
+            sendError(res, 'Unauthorized', 401);
+            return;
+        }
+
+        const status = await subscriptionService.getSubscriptionStatus(req.user.id);
+        const currentPlan = status.currentPlan?.planType || 'FREE';
+        const upgradeOptions = subscriptionService.getUpgradeOptions(currentPlan as any);
+
+        // Get plan details for each upgrade option
+        const plans = subscriptionService.getAvailablePlans();
+        const availableUpgrades = plans.filter(plan => upgradeOptions.includes(plan.planType as any));
+
+        sendSuccess(res, 'Upgrade options retrieved successfully', {
+            currentPlan,
+            canDowngrade: false,
+            upgradeOptions: availableUpgrades,
+            message: currentPlan === 'FREE'
+                ? 'You can choose any paid plan'
+                : 'You can only upgrade to a higher tier plan. Wait for your subscription to expire to choose any plan.',
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
  * Initialize payment for subscription upgrade
  * POST /api/v1/subscription/initialize-payment
  */

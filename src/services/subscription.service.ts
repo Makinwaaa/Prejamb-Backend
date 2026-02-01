@@ -9,6 +9,7 @@ export const PLAN_CONFIG = {
         durationDays: 999999, // Essentially unlimited for free
         examModes: ['PURE_JAMB', 'JAMB_AI'],
         maxTrials: 2, // One trial per mode
+        tier: 0, // Lowest tier
     },
     STARTER: {
         name: 'Starter Plan',
@@ -16,6 +17,7 @@ export const PLAN_CONFIG = {
         durationDays: 30,
         examModes: ['PURE_JAMB', 'JAMB_AI'],
         maxTrials: null, // Unlimited during subscription period
+        tier: 1,
     },
     STANDARD: {
         name: 'Standard Plan',
@@ -23,6 +25,7 @@ export const PLAN_CONFIG = {
         durationDays: 30,
         examModes: ['PURE_JAMB', 'JAMB_AI', 'SINGLE_SUBJECT'],
         maxTrials: null,
+        tier: 2,
     },
     ANNUAL: {
         name: 'Annual Plan',
@@ -30,7 +33,27 @@ export const PLAN_CONFIG = {
         durationDays: 365,
         examModes: ['PURE_JAMB', 'JAMB_AI', 'SINGLE_SUBJECT'],
         maxTrials: null,
+        tier: 3, // Highest tier
     },
+};
+
+/**
+ * Check if a plan change would be a downgrade
+ */
+export const isDowngrade = (currentPlan: PlanType, targetPlan: PlanType): boolean => {
+    const currentTier = PLAN_CONFIG[currentPlan]?.tier ?? 0;
+    const targetTier = PLAN_CONFIG[targetPlan]?.tier ?? 0;
+    return targetTier < currentTier;
+};
+
+/**
+ * Get available upgrade options for a plan
+ */
+export const getUpgradeOptions = (currentPlan: PlanType): PlanType[] => {
+    const currentTier = PLAN_CONFIG[currentPlan]?.tier ?? 0;
+    return (Object.keys(PLAN_CONFIG) as PlanType[]).filter(
+        plan => PLAN_CONFIG[plan].tier > currentTier
+    );
 };
 
 /**
@@ -189,6 +212,19 @@ export const initializePayment = async (
     const config = PLAN_CONFIG[planType];
     if (!config) {
         throw new Error('Invalid plan type');
+    }
+
+    // Get current active subscription to check for downgrade
+    const currentSubscription = await getUserActiveSubscription(userId);
+
+    if (currentSubscription && currentSubscription.planType !== 'FREE') {
+        // User has an active paid subscription - check for downgrade
+        if (isDowngrade(currentSubscription.planType, planType)) {
+            throw new Error(
+                `Cannot downgrade from ${PLAN_CONFIG[currentSubscription.planType].name} to ${config.name}. ` +
+                `You can only upgrade to a higher plan. Your current subscription must expire before you can choose a different plan.`
+            );
+        }
     }
 
     // Generate unique payment reference
