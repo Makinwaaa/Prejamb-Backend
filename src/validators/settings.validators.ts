@@ -69,11 +69,10 @@ export const accountActionReasons = [
 
 /**
  * Initiate account action (disable/delete) validation schema
+ * Reason can be any non-empty string - the frontend may send human-readable text
  */
 export const initiateAccountActionSchema = z.object({
-    reason: z.enum(accountActionReasons, {
-        errorMap: () => ({ message: 'Please select a valid reason' }),
-    }),
+    reason: z.string().min(1, 'Please provide a reason'),
 });
 
 /**

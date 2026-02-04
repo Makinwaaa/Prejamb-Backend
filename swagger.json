@@ -81,6 +81,28 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "lastLoginAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Last login timestamp"
+          },
+          "avatar": {
+            "type": "string",
+            "enum": [
+              "avatar1",
+              "avatar2",
+              "avatar3",
+              "avatar4",
+              "avatar5",
+              "avatar6",
+              "avatar7",
+              "avatar8",
+              "default"
+            ],
+            "example": "default",
+            "description": "User's selected avatar. Persists across login sessions."
           }
         }
       },
@@ -260,22 +282,10 @@
       "ResetPasswordRequest": {
         "type": "object",
         "required": [
-          "email",
-          "otp",
           "newPassword",
           "confirmPassword"
         ],
         "properties": {
-          "email": {
-            "type": "string",
-            "format": "email",
-            "example": "user@example.com"
-          },
-          "otp": {
-            "type": "string",
-            "pattern": "^\\d{6}$",
-            "example": "123456"
-          },
           "newPassword": {
             "type": "string",
             "minLength": 8,
@@ -407,7 +417,7 @@
     },
     {
       "name": "Settings",
-      "description": "User settings and preferences endpoints"
+      "description": "User settings and preferences endpoints. Avatar selection persists across login sessions - the last selected avatar is automatically returned upon next login."
     },
     {
       "name": "Dashboard",
@@ -415,7 +425,7 @@
     },
     {
       "name": "Notifications",
-      "description": "User notification management"
+      "description": "User notification management. New users automatically receive a welcome notification after registration. Notifications in the 'All' section persist permanently (until deleted). The 'Unread' section only shows notifications not yet marked as read."
     }
   ],
   "paths": {
@@ -834,7 +844,26 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse"
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "OTP verified successfully."
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "tempToken": {
+                          "type": "string",
+                          "description": "Temporary token for password reset"
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -853,10 +882,15 @@
     },
     "/auth/reset-password": {
       "post": {
-        "summary": "Reset password with OTP",
-        "description": "Reset the user's password using the OTP sent to their email.",
+        "summary": "Reset password with token",
+        "description": "Reset the user's password using the temporary token from OTP verification.",
         "tags": [
           "Authentication"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
         ],
         "requestBody": {
           "required": true,
@@ -880,7 +914,10 @@
             }
           },
           "400": {
-            "description": "Invalid OTP or validation error"
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Invalid or expired token"
           },
           "429": {
             "description": "Too many requests"
@@ -925,6 +962,41 @@
           },
           "401": {
             "description": "Unauthorized - valid access token required"
+          }
+        }
+      }
+    },
+    "/auth/reactivate-account": {
+      "get": {
+        "summary": "Reactivate disabled account",
+        "description": "Reactivate a disabled account using the activation token sent via email when the account was disabled. After clicking the reactivation link in the email, the user can log in again.",
+        "tags": [
+          "Authentication"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Activation token from the email"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account reactivated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired activation token"
           }
         }
       }
@@ -1504,6 +1576,7 @@
     "/settings/disable-account/verify": {
       "post": {
         "summary": "Verify OTP and disable account",
+        "description": "Verify the OTP and disable the account. User will be logged out and an email with a reactivation link will be sent. The account can be reactivated anytime by clicking the link in the email.",
         "tags": [
           "Settings"
         ],
@@ -1543,6 +1616,7 @@
     "/settings/delete-account/initiate": {
       "post": {
         "summary": "Initiate account delete flow (send OTP)",
+        "description": "Request an OTP to permanently delete the account. After verification, all user data will be deleted and the user will be logged out. The email can be used to register a new account (without free trial).",
         "tags": [
           "Settings"
         ],
@@ -1578,7 +1652,8 @@
     },
     "/settings/delete-account/verify": {
       "post": {
-        "summary": "Verify OTP and delete account",
+        "summary": "Verify OTP and delete account permanently",
+        "description": "Verify the OTP and permanently delete the account and all associated data. The user will be logged out. No confirmation email is sent. The email can be reused for a new registration (without free trial).",
         "tags": [
           "Settings"
         ],
@@ -2614,6 +2689,7 @@
                               "type": {
                                 "type": "string",
                                 "enum": [
+                                  "WELCOME",
                                   "DAILY_REMINDER",
                                   "EXAM_COMPLETED",
                                   "JAMB_UPDATE",
@@ -2667,7 +2743,7 @@
     "/notifications/unread": {
       "get": {
         "summary": "Get unread notifications",
-        "description": "Get all unread notifications for the authenticated user.",
+        "description": "Get all unread notifications for the authenticated user. Once a notification is marked as read via the mark-as-read endpoint, it will no longer appear in this list but remains in the 'all' notifications list.",
         "tags": [
           "Notifications"
         ],

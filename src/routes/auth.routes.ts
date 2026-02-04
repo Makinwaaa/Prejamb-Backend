@@ -370,9 +370,11 @@ router.post(
  * @swagger
  * /auth/reset-password:
  *   post:
- *     summary: Reset password with OTP
- *     description: Reset the user's password using the OTP sent to their email.
+ *     summary: Reset password with token
+ *     description: Reset the user's password using the temporary token from OTP verification.
  *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -387,13 +389,16 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/ApiResponse'
  *       400:
- *         description: Invalid OTP or validation error
+ *         description: Validation error
+ *       401:
+ *         description: Invalid or expired token
  *       429:
  *         description: Too many requests
  */
 router.post(
     '/reset-password',
     passwordResetLimiter,
+    authenticateTempToken,
     validate(resetPasswordSchema),
     authController.resetPassword
 );
@@ -426,5 +431,31 @@ router.post(
  *         description: Unauthorized - valid access token required
  */
 router.get('/me', authenticate, authController.getMe);
+
+/**
+ * @swagger
+ * /auth/reactivate-account:
+ *   get:
+ *     summary: Reactivate disabled account
+ *     description: Reactivate a disabled account using the activation token sent via email when the account was disabled.
+ *     tags: [Authentication]
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Activation token from the email
+ *     responses:
+ *       200:
+ *         description: Account reactivated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiResponse'
+ *       400:
+ *         description: Invalid or expired activation token
+ */
+router.get('/reactivate-account', authController.reactivateAccount);
 
 export default router;

@@ -1,7 +1,8 @@
 import { User, UserPreferences, Otp, SupportTicket, DeletedEmail, RefreshToken, IUser, Subscription } from '../models';
 import { createOtp, verifyOtp } from './otp.service';
-import { sendAccountActionOtpEmail, sendSupportTicketConfirmationEmail } from './email.service';
+import { sendAccountActionOtpEmail, sendSupportTicketConfirmationEmail, sendAccountDisabledEmail } from './email.service';
 import { hashPassword, comparePassword } from '../utils/password.utils';
+import crypto from 'crypto';
 import {
     ChangePasswordInput,
     UpdatePreferencesInput,
@@ -211,13 +212,22 @@ export const completeAccountDisable = async (userId: string, otp: string, reason
         throw new Error(verification.message || 'Invalid or expired OTP');
     }
 
+    // Generate activation token
+    const activationToken = crypto.randomBytes(32).toString('hex');
+
     // Disable User
-    await User.findByIdAndUpdate(userId, {
+    const user = await User.findByIdAndUpdate(userId, {
         isDisabled: true,
         disabledAt: new Date(),
         disableReason: reason,
         subscriptionStatus: 'INACTIVE', // Cancel subscription
-    });
+        activationToken,
+    }, { new: true });
+
+    if (user) {
+        // Send Account Disabled Email with activation link
+        await sendAccountDisabledEmail(user.email, activationToken, user.firstName || null);
+    }
 
     // Invalidate all tokens (Force logout)
     await RefreshToken.deleteMany({ userId });

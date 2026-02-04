@@ -60,7 +60,7 @@ router.use(authenticate);
  *                             type: string
  *                           type:
  *                             type: string
- *                             enum: [DAILY_REMINDER, EXAM_COMPLETED, JAMB_UPDATE, STUDY_TIP, NEW_QUESTIONS, SUBSCRIPTION_REMINDER, SYLLABUS_UPDATE, WEEKLY_SUMMARY, SYSTEM, GENERAL]
+ *                             enum: [WELCOME, DAILY_REMINDER, EXAM_COMPLETED, JAMB_UPDATE, STUDY_TIP, NEW_QUESTIONS, SUBSCRIPTION_REMINDER, SYLLABUS_UPDATE, WEEKLY_SUMMARY, SYSTEM, GENERAL]
  *                           title:
  *                             type: string
  *                           message:
@@ -86,7 +86,7 @@ router.get('/', notificationController.getNotifications);
  * /notifications/unread:
  *   get:
  *     summary: Get unread notifications
- *     description: Get all unread notifications for the authenticated user.
+ *     description: Get all unread notifications for the authenticated user. Once a notification is marked as read via the mark-as-read endpoint, it will no longer appear in this list but remains in the 'all' notifications list.
  *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []

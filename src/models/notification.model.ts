@@ -2,6 +2,7 @@ import mongoose, { Document, Schema, Model } from 'mongoose';
 
 // Notification types
 export type NotificationType =
+    | 'WELCOME'
     | 'DAILY_REMINDER'
     | 'EXAM_COMPLETED'
     | 'JAMB_UPDATE'
@@ -49,6 +50,7 @@ const notificationSchema = new Schema<INotification>(
         type: {
             type: String,
             enum: [
+                'WELCOME',
                 'DAILY_REMINDER',
                 'EXAM_COMPLETED',
                 'JAMB_UPDATE',

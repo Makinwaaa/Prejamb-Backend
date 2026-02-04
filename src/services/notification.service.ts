@@ -115,6 +115,23 @@ export const getUnreadCount = async (userId: string): Promise<number> => {
 // ==================== AUTOMATED NOTIFICATION CREATORS ====================
 
 /**
+ * Create welcome notification for new users
+ * This is sent immediately after profile completion during registration
+ */
+export const createWelcomeNotification = async (
+    userId: string,
+    firstName: string
+): Promise<INotification> => {
+    return createNotification(
+        userId,
+        'WELCOME',
+        'Welcome to Prejamb! 🎉',
+        `Hi ${firstName}! Welcome to Prejamb, your trusted companion for JAMB preparation. Start practicing today and ace your exams!`,
+        { isWelcome: true }
+    );
+};
+
+/**
  * Create exam completed notification
  */
 export const createExamCompletedNotification = async (

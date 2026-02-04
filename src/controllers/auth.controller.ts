@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from '../types';
 import {
     sendSuccess,
     sendError,
+    sendForbidden,
     sendConflict,
 } from '../utils/response.utils';
 import * as authService from '../services/auth.service';
@@ -249,8 +250,8 @@ export const verifyResetOtp = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        await authService.verifyResetOtp(req.body);
-        sendSuccess(res, 'OTP verified successfully.');
+        const result = await authService.verifyResetOtp(req.body);
+        sendSuccess(res, 'OTP verified successfully.', result);
     } catch (error) {
         if (error instanceof Error) {
             const err = error as Error & { attemptsRemaining?: number };
@@ -279,7 +280,12 @@ export const resetPassword = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        await authService.resetPassword(req.body);
+        if (!req.tempUser) {
+            sendForbidden(res, 'Unauthorized request');
+            return;
+        }
+
+        await authService.resetPassword(req.tempUser.userId, req.body);
         sendSuccess(res, 'Password reset successfully. Please login with your new password.');
     } catch (error) {
         if (error instanceof Error) {
@@ -317,6 +323,36 @@ export const getMe = async (
         const profile = await authService.getUserProfile(req.user.id);
         sendSuccess(res, 'Profile retrieved successfully', profile);
     } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Reactivate account
+ * GET /api/v1/auth/reactivate-account
+ */
+export const reactivateAccount = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const token = req.query.token as string;
+
+        if (!token) {
+            sendError(res, 'Activation token is required', 400);
+            return;
+        }
+
+        const userName = await authService.reactivateAccount(token);
+
+        // For API response (if used directly):
+        sendSuccess(res, `Welcome back ${userName}! Your account has been reactivated. Please login.`);
+    } catch (error) {
+        if (error instanceof Error) {
+            sendError(res, error.message, 400);
+            return;
+        }
         next(error);
     }
 };

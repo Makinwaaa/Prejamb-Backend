@@ -10,7 +10,7 @@ interface TokenPayload {
 interface TempTokenPayload {
     userId: string;
     email: string;
-    type: 'email_verification' | 'profile_completion';
+    type: 'email_verification' | 'profile_completion' | 'password_reset';
 }
 
 /**
@@ -41,7 +41,7 @@ export const generateRefreshToken = (userId: string, email: string): string => {
 export const generateTempToken = (
     userId: string,
     email: string,
-    type: 'email_verification' | 'profile_completion'
+    type: 'email_verification' | 'profile_completion' | 'password_reset'
 ): string => {
     const payload: TempTokenPayload = { userId, email, type };
     const secret: Secret = config.jwt.accessSecret;
@@ -80,7 +80,11 @@ export const verifyRefreshToken = (token: string): TokenPayload | null => {
 export const verifyTempToken = (token: string): TempTokenPayload | null => {
     try {
         const decoded = jwt.verify(token, config.jwt.accessSecret) as TempTokenPayload;
-        if (decoded.type === 'email_verification' || decoded.type === 'profile_completion') {
+        if (
+            decoded.type === 'email_verification' ||
+            decoded.type === 'profile_completion' ||
+            decoded.type === 'password_reset'
+        ) {
             return decoded;
         }
         return null;

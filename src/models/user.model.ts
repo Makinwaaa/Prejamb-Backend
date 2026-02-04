@@ -24,6 +24,7 @@ export interface IUser extends Document {
     isDisabled: boolean;
     disabledAt?: Date;
     disableReason?: string;
+    activationToken?: string;
     // Free trial tracking (persists even after account deletion via deletedEmails)
     hasUsedFreeTrial: boolean;
     // Password security - stores hashes of last 3 passwords
@@ -101,6 +102,11 @@ const userSchema = new Schema<IUser>(
         disableReason: {
             type: String,
             default: null,
+        },
+        activationToken: {
+            type: String,
+            default: null,
+            index: true,
         },
         // Free trial tracking
         hasUsedFreeTrial: {

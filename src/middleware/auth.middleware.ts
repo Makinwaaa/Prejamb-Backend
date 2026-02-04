@@ -71,7 +71,10 @@ export const authenticateTempToken = async (
             return;
         }
 
-        if (payload.type !== 'profile_completion') {
+        if (
+            payload.type !== 'profile_completion' &&
+            payload.type !== 'password_reset'
+        ) {
             sendForbidden(res, 'Invalid token type for this operation');
             return;
         }

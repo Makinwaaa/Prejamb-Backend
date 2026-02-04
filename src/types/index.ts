@@ -9,7 +9,7 @@ export interface AuthenticatedRequest extends Request {
     tempUser?: {
         userId: string;
         email: string;
-        type: 'email_verification' | 'profile_completion';
+        type: 'email_verification' | 'profile_completion' | 'password_reset';
     };
 }
 
@@ -97,8 +97,6 @@ export interface ForgotPasswordBody {
 }
 
 export interface ResetPasswordBody {
-    email: string;
-    otp: string;
     newPassword: string;
     confirmPassword: string;
 }

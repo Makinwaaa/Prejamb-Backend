@@ -412,3 +412,77 @@ export const sendSupportTicketConfirmationEmail = async (
     html,
   });
 };
+
+/**
+ * Send account disabled email with activation link
+ */
+export const sendAccountDisabledEmail = async (
+  email: string,
+  activationToken: string,
+  firstName: string | null
+): Promise<void> => {
+  // Prefer using clientUrl from config if available, else hardcode relative path or localhost for dev properties
+  // Assuming frontend is running where user visits. Usually activation link points to frontend which calls API.
+  // Or API endpoint handled by backend which redirects to frontend. 
+  // Let's assume frontend URL for now. 
+  // But wait, the user said "button via mail... activate it back by clicking on the button".
+  // If clicking button calls API directly (GET), user might just see JSON response. 
+  // Better if it links to Frontend Page "Account Reactivation" which calls the API. 
+  // OR the link goes to Backend, backend reactivates and Redirects to Frontend login with success param.
+  // Let's go with Link -> Backend -> Redirect.
+
+  // TODO: Replace with actual config.app.clientUrl or backend Url
+  const activationLink = `http://localhost:5000/api/v1/auth/reactivate-account?token=${activationToken}`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Account Disabled</title>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 40px auto; padding: 0; }
+        .header { background: linear-gradient(135deg, #6b7280 0%, #374151 100%); color: white; padding: 30px; text-align: center; border-radius: 12px 12px 0 0; }
+        .header h1 { margin: 0; font-size: 24px; font-weight: 700; }
+        .content { background: white; padding: 40px 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .button-container { text-align: center; margin: 30px 0; }
+        .button { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; display: inline-block; }
+        .button:hover { opacity: 0.9; }
+        .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Account Disabled</h1>
+        </div>
+        <div class="content">
+          <p>Hello${firstName ? ' ' + firstName : ''},</p>
+          <p>You have successfully disabled your Prejamb account.</p>
+          <p>While your account is disabled, you will not be able to log in or access your data. However, we've kept everything safe for when you return.</p>
+          
+          <p>Ready to come back? Click the button below to reactivate your account instantly:</p>
+          
+          <div class="button-container">
+            <a href="${activationLink}" class="button">Reactivate My Account</a>
+          </div>
+          
+          <p style="font-size: 12px; color: #6b7280;">If the button doesn't work, copy and paste this link into your browser:<br>${activationLink}</p>
+          
+          <div class="footer">
+            <p>© ${new Date().getFullYear()} Prejamb. Your success, our mission.</p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+    `;
+
+  await sendEmail({
+    to: email,
+    subject: 'Account Disabled - How to Reactivate',
+    html,
+  });
+};
