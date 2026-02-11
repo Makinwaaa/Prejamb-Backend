@@ -1832,9 +1832,17 @@
                                 "type": "number",
                                 "example": 500
                               },
-                              "validity": {
-                                "type": "string",
-                                "example": "30 days"
+                              "durationDays": {
+                                "type": "integer",
+                                "nullable": true,
+                                "example": 30,
+                                "description": "30 for Starter/Standard, 365 for Annual, null for Free"
+                              },
+                              "validFor": {
+                                "type": "integer",
+                                "nullable": true,
+                                "example": 30,
+                                "description": "30 for Starter/Standard, 365 for Annual, null for Free"
                               },
                               "examModes": {
                                 "type": "array",
@@ -1845,6 +1853,20 @@
                                   "PURE_JAMB",
                                   "JAMB_AI"
                                 ]
+                              },
+                              "features": {
+                                "type": "object",
+                                "properties": {
+                                  "pureJamb": {
+                                    "type": "boolean"
+                                  },
+                                  "jambAI": {
+                                    "type": "boolean"
+                                  },
+                                  "singleSubject": {
+                                    "type": "boolean"
+                                  }
+                                }
                               }
                             }
                           }
@@ -1862,7 +1884,7 @@
     "/subscription/current": {
       "get": {
         "summary": "Get current user subscription",
-        "description": "Get the current active subscription details for the authenticated user.",
+        "description": "Get the current active subscription details for the authenticated user. Users always have an active plan — if no paid subscription is active, the user automatically falls back to the Free plan.",
         "tags": [
           "Subscription"
         ],
@@ -1896,13 +1918,32 @@
                           "type": "object",
                           "properties": {
                             "planType": {
-                              "type": "string"
+                              "type": "string",
+                              "example": "STARTER"
                             },
                             "name": {
-                              "type": "string"
+                              "type": "string",
+                              "example": "Starter Plan"
                             },
                             "amount": {
-                              "type": "number"
+                              "type": "number",
+                              "example": 500
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "description": "When the subscription record was created"
+                            },
+                            "dateActivated": {
+                              "type": "string",
+                              "format": "date-time",
+                              "description": "The date the user subscribed to this plan"
+                            },
+                            "validFor": {
+                              "type": "integer",
+                              "nullable": true,
+                              "example": 30,
+                              "description": "30 for Starter/Standard, 365 for Annual, null for Free"
                             },
                             "startDate": {
                               "type": "string",
@@ -1910,12 +1951,28 @@
                             },
                             "endDate": {
                               "type": "string",
-                              "format": "date-time"
+                              "format": "date-time",
+                              "nullable": true,
+                              "description": "null for Free plan"
                             },
-                            "daysRemaining": {
-                              "type": "number"
+                            "daysLeft": {
+                              "type": "integer",
+                              "nullable": true,
+                              "example": 25,
+                              "description": "Dynamic countdown until 0. When it reaches 0, user falls back to Free plan. null for Free plan."
                             },
                             "freeTrialsUsed": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "freeTrialsRemaining": {
+                              "type": "integer",
+                              "nullable": true,
+                              "description": "Number of free trials remaining (only for Free plan, null for paid plans)"
+                            },
+                            "examModes": {
                               "type": "array",
                               "items": {
                                 "type": "string"
@@ -1993,8 +2050,8 @@
     },
     "/subscription/initialize-payment": {
       "post": {
-        "summary": "Initialize payment for subscription upgrade",
-        "description": "Initialize a payment transaction for upgrading to a paid subscription plan.\n\n**Important**: Users cannot downgrade to a lower plan while on an active paid subscription.\nThey can only upgrade to a higher tier plan. When the subscription expires, they will fall back\nto the free plan (without trial access) and can then choose any plan.\n\nPlan hierarchy: FREE < STARTER < STANDARD < ANNUAL\n",
+        "summary": "Initialize payment for subscription",
+        "description": "Initialize a subscription payment.\n\n**FREE plan**: Immediately activates. No Paystack call. Response has redirectRequired=false.\n**Paid plans**: Calls Paystack with plan code. Response has redirectRequired=true and authorization_url for redirect.\n\nPlan codes: STARTER=PLN_tc7124mko6gjmuj, STANDARD=PLN_q62tai9tprye3bm, ANNUAL=PLN_ihu5gc5pa3paww2\n\nHierarchy: FREE < STARTER < STANDARD < ANNUAL. Cannot downgrade while on active paid plan.\n",
         "tags": [
           "Subscription"
         ],
@@ -2010,13 +2067,13 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "planType",
-                  "paymentMethod"
+                  "planType"
                 ],
                 "properties": {
                   "planType": {
                     "type": "string",
                     "enum": [
+                      "FREE",
                       "STARTER",
                       "STANDARD",
                       "ANNUAL"
@@ -2030,7 +2087,8 @@
                       "TRANSFER",
                       "USSD"
                     ],
-                    "example": "CARD"
+                    "example": "CARD",
+                    "description": "Required for paid plans. Optional for FREE."
                   }
                 }
               }
@@ -2063,7 +2121,51 @@
                           "example": 500
                         },
                         "plan": {
-                          "type": "object"
+                          "type": "object",
+                          "properties": {
+                            "planType": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "amount": {
+                              "type": "number"
+                            },
+                            "validFor": {
+                              "type": "integer",
+                              "example": 30
+                            }
+                          }
+                        },
+                        "authorizationUrl": {
+                          "type": "string",
+                          "description": "Paystack payment page URL",
+                          "example": "https://checkout.paystack.com/abc123"
+                        },
+                        "authorization_url": {
+                          "type": "string",
+                          "description": "Alias for authorizationUrl",
+                          "example": "https://checkout.paystack.com/abc123"
+                        },
+                        "accessCode": {
+                          "type": "string",
+                          "description": "Paystack access code",
+                          "example": "abc123xyz"
+                        },
+                        "access_code": {
+                          "type": "string",
+                          "description": "Alias for accessCode",
+                          "example": "abc123xyz"
+                        },
+                        "reference": {
+                          "type": "string",
+                          "description": "Alias for paymentReference",
+                          "example": "PAY-1234567890"
+                        },
+                        "redirectRequired": {
+                          "type": "boolean",
+                          "description": "true for paid plans (redirect to authorization_url), false for FREE plan"
                         }
                       }
                     }
@@ -2077,14 +2179,17 @@
           },
           "401": {
             "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Payment initialized but authorization_url missing from Paystack response"
           }
         }
       }
     },
     "/subscription/verify-payment": {
       "post": {
-        "summary": "Verify payment and activate subscription",
-        "description": "Verify a payment transaction and activate the corresponding subscription.",
+        "summary": "Verify Paystack payment and activate subscription",
+        "description": "Verify a Paystack payment transaction and activate the corresponding subscription. Called after user completes payment on Paystack checkout. The payment reference is verified with Paystack to confirm the transaction was successful.",
         "tags": [
           "Subscription"
         ],
@@ -2101,10 +2206,6 @@
                   "paymentReference": {
                     "type": "string",
                     "example": "PAY-1234567890-ABCD1234"
-                  },
-                  "paymentGatewayReference": {
-                    "type": "string",
-                    "description": "Optional reference from payment gateway"
                   }
                 }
               }
@@ -2129,7 +2230,45 @@
                       "type": "object",
                       "properties": {
                         "subscription": {
-                          "type": "object"
+                          "type": "object",
+                          "properties": {
+                            "planType": {
+                              "type": "string",
+                              "example": "STARTER"
+                            },
+                            "name": {
+                              "type": "string",
+                              "example": "Starter Plan"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "description": "When the subscription record was created"
+                            },
+                            "dateActivated": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "validFor": {
+                              "type": "integer",
+                              "example": 30
+                            },
+                            "startDate": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "endDate": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "daysLeft": {
+                              "type": "integer",
+                              "example": 30
+                            },
+                            "isActive": {
+                              "type": "boolean"
+                            }
+                          }
                         }
                       }
                     }
@@ -2139,7 +2278,7 @@
             }
           },
           "400": {
-            "description": "Invalid payment or already processed"
+            "description": "Invalid payment, already processed, or Paystack verification failed"
           }
         }
       }
@@ -2238,28 +2377,6 @@
         }
       }
     },
-    "/subscription/cancel": {
-      "post": {
-        "summary": "Cancel subscription",
-        "description": "Cancel the current active subscription.",
-        "tags": [
-          "Subscription"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Subscription cancelled successfully"
-          },
-          "401": {
-            "description": "Unauthorized"
-          }
-        }
-      }
-    },
     "/dashboard": {
       "get": {
         "summary": "Get full dashboard data",
@@ -2345,6 +2462,24 @@
                               "type": "string",
                               "format": "date-time",
                               "nullable": true
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true,
+                              "description": "Date created"
+                            },
+                            "startDate": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true,
+                              "description": "Start date"
+                            },
+                            "dateActivated": {
+                              "type": "string",
+                              "format": "date-time",
+                              "nullable": true,
+                              "description": "Date activated (same as start date)"
                             }
                           }
                         },

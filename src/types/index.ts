@@ -55,6 +55,7 @@ export interface UserProfile {
     isProfileComplete: boolean;
     createdAt: Date;
     subscriptionStatus: string;
+    subscriptionPlan: string;
     subscriptionEndDate?: Date | null;
     lastLoginAt?: Date | null;
     avatar: string;

@@ -19,6 +19,7 @@ export interface IUser extends Document {
     isProfileComplete: boolean;
     // Subscription fields
     subscriptionStatus: SubscriptionStatus;
+    subscriptionPlan: string; // 'FREE', 'STARTER', 'STANDARD', 'ANNUAL'
     subscriptionEndDate?: Date;
     // Account status fields
     isDisabled: boolean;
@@ -89,6 +90,11 @@ const userSchema = new Schema<IUser>(
         subscriptionEndDate: {
             type: Date,
             default: null,
+        },
+        subscriptionPlan: {
+            type: String,
+            default: 'FREE',
+            required: true,
         },
         // Account status fields
         isDisabled: {

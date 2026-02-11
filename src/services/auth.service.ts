@@ -34,6 +34,7 @@ const toUserProfile = (user: IUser): UserProfile => ({
     isProfileComplete: user.isProfileComplete,
     createdAt: user.createdAt,
     subscriptionStatus: user.subscriptionStatus,
+    subscriptionPlan: user.subscriptionPlan || 'FREE',
     subscriptionEndDate: user.subscriptionEndDate,
     lastLoginAt: user.lastLoginAt || null,
     avatar: user.avatar || 'default',

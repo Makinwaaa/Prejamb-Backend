@@ -81,6 +81,9 @@ export const getUpgradeOptions = async (
 /**
  * Initialize payment for subscription upgrade
  * POST /api/v1/subscription/initialize-payment
+ *
+ * For FREE plan: Immediately activates, returns success with no redirect URL.
+ * For paid plans: Returns Paystack authorization_url for user redirect.
  */
 export const initializePayment = async (
     req: AuthenticatedRequest,
@@ -94,15 +97,55 @@ export const initializePayment = async (
         }
 
         const { planType, paymentMethod } = req.body;
+
+        // Handle FREE plan: immediate activation, no payment needed
+        if (planType === 'FREE') {
+            const result = await subscriptionService.initializePayment(
+                req.user.id,
+                planType,
+                paymentMethod || 'CARD'
+            );
+            sendSuccess(res, 'Free plan activated successfully', {
+                paymentReference: 'FREE',
+                amount: 0,
+                plan: result.plan,
+                authorizationUrl: null,
+                authorization_url: null,
+                accessCode: null,
+                access_code: null,
+                reference: 'FREE',
+                redirectRequired: false,
+            });
+            return;
+        }
+
+        // Paid plans: call Paystack
         const result = await subscriptionService.initializePayment(
             req.user.id,
             planType,
             paymentMethod
         );
 
-        sendSuccess(res, 'Payment initialized successfully', result);
+        // Ensure authorization_url is present
+        if (!result.authorization_url) {
+            sendError(res, 'Payment initialized but URL missing. Please check Paystack plan configuration.', 500);
+            return;
+        }
+
+        sendSuccess(res, 'Payment initialized successfully. Redirect user to authorization_url.', {
+            paymentReference: result.paymentReference,
+            amount: result.amount,
+            plan: result.plan,
+            authorizationUrl: result.authorization_url,
+            authorization_url: result.authorization_url,
+            accessCode: result.access_code,
+            access_code: result.access_code,
+            reference: result.paymentReference,
+            redirectRequired: true,
+        });
     } catch (error) {
         if (error instanceof Error) {
+            console.error('[initializePayment] Error:', error.message);
             sendError(res, error.message, 400);
             return;
         }
@@ -120,18 +163,27 @@ export const verifyPayment = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        const { paymentReference, paymentGatewayReference } = req.body;
+        const { paymentReference } = req.body;
 
         const result = await subscriptionService.verifyAndActivateSubscription(
-            paymentReference,
-            paymentGatewayReference
+            paymentReference
         );
+
+        const config = subscriptionService.PLAN_CONFIG[result.subscription.planType];
+        const daysLeft = Math.max(0, Math.ceil(
+            (result.subscription.endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        ));
 
         sendSuccess(res, 'Payment verified and subscription activated successfully', {
             subscription: {
                 planType: result.subscription.planType,
+                name: config.name,
+                dateActivated: result.subscription.startDate,
+                createdAt: result.subscription.createdAt,
+                validFor: config.durationDays,
                 startDate: result.subscription.startDate,
                 endDate: result.subscription.endDate,
+                daysLeft,
                 isActive: result.subscription.isActive,
             },
         });
@@ -192,28 +244,6 @@ export const useTrial = async (
         await subscriptionService.markFreeTrialUsed(req.user.id, examMode);
 
         sendSuccess(res, 'Trial marked as used');
-    } catch (error) {
-        next(error);
-    }
-};
-
-/**
- * Cancel subscription
- * POST /api/v1/subscription/cancel
- */
-export const cancelSubscription = async (
-    req: AuthenticatedRequest,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    try {
-        if (!req.user) {
-            sendError(res, 'Unauthorized', 401);
-            return;
-        }
-
-        await subscriptionService.cancelSubscription(req.user.id);
-        sendSuccess(res, 'Subscription cancelled successfully');
     } catch (error) {
         next(error);
     }

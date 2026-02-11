@@ -1,5 +1,6 @@
 import { User, ExamResult, Subscription } from '../models';
 import { getSubscriptionStatus, PLAN_CONFIG } from './subscription.service';
+import { formatRelativeTime } from '../utils/date.utils';
 
 // JAMB News interface
 interface JambNews {
@@ -31,15 +32,19 @@ export const getDashboardData = async (userId: string) => {
         welcome: {
             firstName: user.firstName,
             lastName: user.lastName,
-            lastLoginAt: user.lastLoginAt,
+            lastLoginAt: formatRelativeTime(user.lastLoginAt),
             avatar: user.avatar || 'default',
+            plan: user.subscriptionPlan || 'FREE',
         },
         subscription: {
             status: subscriptionData.status,
             planType: subscriptionData.currentPlan?.planType || null,
             planName: subscriptionData.currentPlan?.name || null,
-            daysRemaining: subscriptionData.currentPlan?.daysRemaining || null,
+            daysRemaining: subscriptionData.currentPlan?.daysLeft || null,
             endDate: subscriptionData.currentPlan?.endDate || null,
+            createdAt: subscriptionData.currentPlan?.createdAt || null,
+            startDate: subscriptionData.currentPlan?.startDate || null,
+            dateActivated: subscriptionData.currentPlan?.dateActivated || null,
         },
         analytics,
         recentExams,
@@ -160,69 +165,115 @@ export const getRecentExamResults = async (userId: string, limit: number = 3) =>
  * Get JAMB news from official sources
  * Falls back to curated news if scraping fails
  */
+/**
+ * Get JAMB news from official sources
+ * Scrapes news from JAMB official website
+ */
 export const getJambNews = async (): Promise<JambNews[]> => {
     try {
-        // In production, this would scrape from JAMB's official website
-        // For now, we return curated, relevant news items
-        // These would be updated periodically via a background job or admin interface
+        // Try to fetch from JAMB news page
+        const response = await fetch('https://www.jamb.gov.ng/news');
+        const html = await response.text();
 
-        const currentYear = new Date().getFullYear();
-        const nextYear = currentYear + 1;
+        const news: JambNews[] = [];
+        // Regex to extract news items from the structure found in jamb_news.html
+        // Structure: <div class="txt"><h4><a href="...">Title</a></h4><p>Summary... <a href="...">read more...</a></p>...<span class="info">DATE</span>
 
-        // Curated news items (would be stored in DB in production)
-        const news: JambNews[] = [
-            {
-                id: 'news-1',
-                title: `JAMB ${nextYear} UTME Registration Update`,
-                summary: `JAMB has announced the commencement of ${nextYear} UTME registration. Ensure your profile is updated and documentation ready.`,
-                date: new Date().toISOString(),
-                source: 'JAMB Official',
-                url: 'https://www.jamb.gov.ng',
-            },
-            {
-                id: 'news-2',
-                title: 'Updated Subject Combinations Released',
-                summary: 'JAMB has released updated subject combinations for all courses. Check if your chosen course has any changes.',
-                date: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-                source: 'JAMB Official',
-                url: 'https://www.jamb.gov.ng',
-            },
-            {
-                id: 'news-3',
-                title: 'JAMB Mock Examination Dates Announced',
-                summary: 'The dates for the JAMB mock examination have been announced. Register early to secure your slot.',
-                date: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-                source: 'JAMB Official',
-                url: 'https://www.jamb.gov.ng',
-            },
-            {
-                id: 'news-4',
-                title: 'Use of English: Essential Topics to Cover',
-                summary: 'JAMB emphasizes key topics in Use of English that candidates must master for optimal performance.',
-                date: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-                source: 'JAMB Advisory',
-                url: 'https://www.jamb.gov.ng',
-            },
-            {
-                id: 'news-5',
-                title: 'CBT Centers Nationwide Update',
-                summary: 'JAMB has accredited new CBT centers across Nigeria. More options now available for candidates.',
-                date: new Date(Date.now() - 345600000).toISOString(), // 4 days ago
-                source: 'JAMB Official',
-                url: 'https://www.jamb.gov.ng',
-            },
-        ];
+        // We use a simplified regex approach to be more robust against minor HTML variations
+        const newsItemsRegex = /<div class="txt">\s*<h4><a href="([^"]+)">([^<]+)<\/a><\/h4>\s*<p>([\s\S]*?)<\/p>\s*<span class="read">\s*<\/span>\s*<span class="info">([^<]+)\|/g;
 
-        return news;
+        let match;
+        let idCounter = 1;
+
+        while ((match = newsItemsRegex.exec(html)) !== null && news.length < 3) {
+            const [_, relativeUrl, title, rawSummary, dateStr] = match;
+
+            // Clean up summary
+            let summary = rawSummary.replace(/<a[^>]*>.*?<\/a>/g, '').replace(/read more\.\.\./i, '').trim();
+            // Remove excessive whitespace
+            summary = summary.replace(/\s+/g, ' ');
+            if (summary.length > 150) summary = summary.substring(0, 150) + '...';
+
+            // Resolve URL
+            const url = relativeUrl.startsWith('http')
+                ? relativeUrl
+                : `https://www.jamb.gov.ng/${relativeUrl}`;
+
+            // Parse date (approximate)
+            let date = new Date().toISOString();
+            // dateStr is like "MAY, 2025 "
+            try {
+                const cleanDateStr = dateStr.trim();
+                const parsedDate = new Date(cleanDateStr);
+                if (!isNaN(parsedDate.getTime())) {
+                    date = parsedDate.toISOString();
+                }
+            } catch (e) {
+                // Keep default date
+            }
+
+            news.push({
+                id: `news-${idCounter++}`,
+                title: title.trim(),
+                summary,
+                date,
+                source: 'JAMB Official',
+                url
+            });
+        }
+
+        if (news.length > 0) {
+            return news;
+        }
+
+        // Fallback to hardcoded news if scraping finds nothing (e.g. structure changed)
+        console.log('Scraping found no items, falling back to static data');
+        return getFallbackNews();
+
     } catch (error) {
         console.error('Error fetching JAMB news:', error);
-        return [];
+        return getFallbackNews();
     }
 };
 
 /**
- * Check subscription expiry and create fallback to free plan without trial
- * This should be called by a scheduled job or on user login
+ * Fallback news data
+ */
+const getFallbackNews = (): JambNews[] => {
+    const nextYear = new Date().getFullYear() + 1;
+    return [
+        {
+            id: 'news-1',
+            title: `JAMB ${nextYear} UTME Registration Update`,
+            summary: `JAMB has announced the commencement of ${nextYear} UTME registration. Ensure your profile is updated and documentation ready.`,
+            date: new Date().toISOString(),
+            source: 'JAMB Official',
+            url: 'https://www.jamb.gov.ng',
+        },
+        {
+            id: 'news-2',
+            title: 'Updated Subject Combinations Released',
+            summary: 'JAMB has released updated subject combinations for all courses. Check if your chosen course has any changes.',
+            date: new Date(Date.now() - 86400000).toISOString(),
+            source: 'JAMB Official',
+            url: 'https://www.jamb.gov.ng',
+        },
+        {
+            id: 'news-3',
+            title: 'JAMB Mock Examination Dates Announced',
+            summary: 'The dates for the JAMB mock examination have been announced. Register early to secure your slot.',
+            date: new Date(Date.now() - 172800000).toISOString(),
+            source: 'JAMB Official',
+            url: 'https://www.jamb.gov.ng',
+        }
+    ];
+};
+
+
+/**
+ * Check subscription expiry and fallback to free plan.
+ * This ensures users always have an active plan.
+ * Called on user login or via scheduled job.
  */
 export const checkAndHandleSubscriptionExpiry = async (userId: string): Promise<void> => {
     const user = await User.findById(userId);
@@ -234,23 +285,22 @@ export const checkAndHandleSubscriptionExpiry = async (userId: string): Promise<
         isActive: true,
     });
 
-    if (!activeSubscription) return;
+    if (!activeSubscription) {
+        // No active subscription at all — create free plan
+        const { ensureActiveSubscription } = await import('./subscription.service');
+        await ensureActiveSubscription(userId);
+        return;
+    }
 
-    // Check if subscription has expired
-    if (new Date() > activeSubscription.endDate) {
-        // Mark subscription as inactive
+    // Check if paid subscription has expired
+    if (activeSubscription.planType !== 'FREE' && new Date() > activeSubscription.endDate) {
+        // Mark expired subscription as inactive
         activeSubscription.isActive = false;
         await activeSubscription.save();
 
-        // Update user status to inactive - no free trial since they've already used it
-        await User.findByIdAndUpdate(userId, {
-            subscriptionStatus: 'INACTIVE',
-            subscriptionEndDate: null,
-        });
-
-        // Note: We do NOT create a new free subscription here because:
-        // 1. User has already used their free trial
-        // 2. They need to pay for a new plan
-        // All exam modes will be blocked until they pay
+        // Automatically fallback to free plan
+        const { createFreeSubscription } = await import('./subscription.service');
+        await createFreeSubscription(userId);
     }
 };
+

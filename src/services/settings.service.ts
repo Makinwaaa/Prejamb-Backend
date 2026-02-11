@@ -14,6 +14,8 @@ type UserDocument = IUser & {
     _id: any;
 };
 
+import { getSubscriptionStatus } from './subscription.service';
+
 /**
  * Get user profile detailed info
  */
@@ -21,23 +23,22 @@ export const getUserProfile = async (userId: string) => {
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
 
-    // Get active subscription status from Subscription model
-    const activeSubscription = await Subscription.findOne({
-        userId,
-        isActive: true,
-        endDate: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
+    // Get active subscription status using central logic
+    // This handles fallback to FREE plan if paid plan expired
+    const subscriptionData = await getSubscriptionStatus(userId);
+    const plan = subscriptionData.currentPlan;
 
     // Determine subscription status
-    let subscriptionStatus: 'ACTIVE' | 'INACTIVE' = 'INACTIVE';
-    let subscriptionPlan: string | null = null;
-    let subscriptionEndDate: Date | null = null;
+    // In our system, status is always ACTIVE (either paid or free)
+    // But we map 'FREE' to 'INACTIVE' if the frontend expects that for paid features?
+    // The user requirement says "return the plan the user is active on".
+    // So if they are on FREE, we return FREE.
 
-    if (activeSubscription) {
-        subscriptionStatus = 'ACTIVE';
-        subscriptionPlan = activeSubscription.planType;
-        subscriptionEndDate = activeSubscription.endDate;
-    }
+    // However, the legacy return type suggests simple strings.
+    // Let's map it accurately.
+    const subscriptionStatus = 'ACTIVE';
+    const subscriptionPlan = plan.planType;
+    const subscriptionEndDate = plan.endDate;
 
     // Format createdAt date for display
     const accountCreation = user.createdAt;
@@ -49,7 +50,7 @@ export const getUserProfile = async (userId: string) => {
         email: user.email,
         phoneNumber: user.phoneNumber,
         subscription: subscriptionStatus,
-        subscriptionPlan,
+        subscriptionPlan, // Will be 'FREE', 'STARTER', etc.
         subscriptionEndDate,
         accountCreation,
         isVerified: user.isVerified,
